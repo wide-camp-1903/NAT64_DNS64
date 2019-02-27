@@ -93,9 +93,14 @@ make install
 [ここ](https://jool.mx/en/run-nat64.html)を参考にした
 
 ```bash
+練習環境
+YOUR_IPV4_ADDR=10.211.55.12  #適宜変更
+
+##本番環境
 YOUR_IPV4_ADDR=10.0.11.1  #適宜変更
-modprobe jool pool6=64:ff9b/96 pool4=$YOUR_IPV4_ADDR
-jool instance add "example" --iptables  --pool6 64:ff9b::/96
+/sbin/modprobe jool pool6=2001:200:0:ff43::/96
+jool instance add "example" --netfilter  --pool6 2001:200:0:ff43::/96
+
 ```
 
 ## ダウン
@@ -120,11 +125,13 @@ server:
   pidfile: "/var/run/unbound.pid"
   use-syslog: yes
   module-config: "dns64 iterator"
-  dns64-prefix: 64:ff9b::/96
-  dns64-synthall: yes
-  interface: fc01:0:0:1::1
+  dns64-prefix: 2001:200:0:ff43::/96
+  dns64-synthall: no
+  #private-address: "0.0.0.0/0”
+  #do-ip4: no
+  interface: ::
   access-control: ::0/0 allow
-  #interface-automatic: yes
+  interface-automatic: yes
  
 forward-zone:
  name: "."
@@ -196,3 +203,32 @@ ipv4.l.google.com.	273	IN	AAAA	64:ff9b::acd9:19ce
 curl ipv4.google.com
 # htmlっぽいのが帰って来ます
 ```
+
+## 自動起動
+```bash
+sudo systemctl restart unbound.service
+
+```
+
+```bash 
+
+```
+```bash
+ip6tables -t mangle -A PREROUTING \
+  -d 2001:200:0:ff43::/96 \
+  -j JOOL --instance "example"
+iptables  -t mangle -A PREROUTING \
+  -d 10.0.11.1 -p tcp --dport 61001:65535 \
+  -j JOOL --instance "example"
+iptables  -t mangle -A PREROUTING \
+  -d 10.0.11.1 -p udp --dport 61001:65535 \
+  -j JOOL --instance "example"
+iptables  -t mangle -A PREROUTING \
+  -d 10.0.11.1 -p icmp \
+  -j JOOL --instance "example"
+
+```
+
+dns変更
+nic変更
+  internal server
