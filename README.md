@@ -19,7 +19,7 @@ https://www.webessentials.biz/parallelsdesktop/esxi/
 
 
 ## VMの準備
-nat64/DNS64用 ubuntu18.04 cui onlyの方で
+テスト環境をv6線に繋いで
 ```bash
 auto lo
 iface lo inet loopback
@@ -31,6 +31,8 @@ netmask 64
 gateway fe80::20c:29ff:fe6d:e7d6
 dns-nameservers fc01:29ff:fe6d:e7d6
 ```
+nat64/DNS64用 ubuntu18.04 cui onlyの方を
+v6線とインターネットに繋がる線にに繋いで
 `/etc/netplan/50-cloud-init.yaml`
 を編集して
 `netplan apply` を実行
@@ -91,7 +93,7 @@ make install
 [ここ](https://jool.mx/en/run-nat64.html)を参考にした
 
 ```bash
-YOUR_IPV4_ADDR=10.0.0.1  #適宜変更
+YOUR_IPV4_ADDR=10.0.11.1  #適宜変更
 modprobe jool pool6=64:ff9b/96 pool4=$YOUR_IPV4_ADDR
 jool instance add "example" --iptables  --pool6 64:ff9b::/96
 ```
@@ -137,8 +139,60 @@ sudo systemctl restart unbound.service
 ### 確認
 DNS/NAT64マシンでこれを実行
 ```bash
-dig ipv4.google.com AAAA @8.8.8.8
+$ dig ipv4.google.com AAAA @8.8.8.8
+
+; <<>> DiG 9.11.3-1ubuntu1.5-Ubuntu <<>> ipv4.google.com AAAA @8.8.8.8
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 45251
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 512
+;; QUESTION SECTION:
+;ipv4.google.com.		IN	AAAA
+
+;; ANSWER SECTION:
+ipv4.google.com.	21599	IN	CNAME	ipv4.l.google.com.
+
+;; AUTHORITY SECTION:
+l.google.com.		59	IN	SOA	ns1.google.com. dns-admin.google.com. 235857667 900 900 1800 60
+
+;; Query time: 83 msec
+;; SERVER: 8.8.8.8#53(8.8.8.8)
+;; WHEN: Wed Feb 27 08:44:19 UTC 2019
+;; MSG SIZE  rcvd: 115
+
+
 ```
+
+自身のIPを指定してdigを走らせる
 ```bash
-dig ipv4.google.com AAAA @localhost
+$ dig ipv4.google.com AAAA @fc01:0:0:1::1
+
+; <<>> DiG 9.11.3-1ubuntu1.5-Ubuntu <<>> ipv4.google.com AAAA @fc01:0:0:1::1
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 57039
+;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;ipv4.google.com.		IN	AAAA
+
+;; ANSWER SECTION:
+ipv4.google.com.	21573	IN	CNAME	ipv4.l.google.com.
+ipv4.l.google.com.	273	IN	AAAA	64:ff9b::acd9:19ce
+
+;; Query time: 0 msec
+;; SERVER: fc01:0:0:1::1#53(fc01:0:0:1::1)
+;; WHEN: Wed Feb 27 08:50:20 UTC 2019
+;; MSG SIZE  rcvd: 93
+```
+
+## 全体を通してテスト
+```bash
+curl ipv4.google.com
+# htmlっぽいのが帰って来ます
 ```
