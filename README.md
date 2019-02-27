@@ -135,7 +135,8 @@ server:
  
 forward-zone:
  name: "."
- forward-addr: 8.8.8.8
+ forward-addr: 203.178.156.130
+ forward-addr: 203.178.156.131
 ```
 ### 再起動
 
@@ -229,6 +230,6 @@ iptables  -t mangle -A PREROUTING \
 
 ```
 
-dns変更
+
 nic変更
   internal server
