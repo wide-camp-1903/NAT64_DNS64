@@ -5,21 +5,40 @@ nat64をjoolで立てます
 環境は[ここ](https://www.webessentials.biz/parallelsdesktop/esxi/)を参考にして
 Macbookの中にesxiを入れて検証した
 
-client用 ubuntu16.04 gui
 
-nat64用 ubuntu18.04 cui only  
-/etc/netplan/50-cloud-init.yaml
+
+client用 ubuntu16.04 gui
+nat64/DNS64用 ubuntu18.04 cui only
+の２種のVMを用意
+
+
+## 参考にした記事たち
+https://jool.mx/en/run-nat64.html
+https://blog.techlab-xe.net/archives/5269
+https://www.webessentials.biz/parallelsdesktop/esxi/
+
+
+## VMの準備
+nat64/DNS64用 ubuntu18.04 cui onlyの方で
+```bash
+auto lo
+iface lo inet loopback
+
+auto ens160
+iface ens160 inet6 static
+address fc01::1:20c:29ff:feb9:197b/64
+netmask 64
+gateway fe80::20c:29ff:fe6d:e7d6
+dns-nameservers fc01:29ff:fe6d:e7d6
+```
+`/etc/netplan/50-cloud-init.yaml`
+を編集して
+`netplan apply` を実行
 ```yaml:/etc/netplan/50-cloud-init.yaml
 network:
     ethernets:
         ens160:
             dhcp4: true
-            #dhcp4: no
-            #addresses: 
-            #    - 10.0.0.1/8
-            #gateway4: 10.0.0.1
-            #nameservers:
-            #    addresses: [8.8.8.8, 8.8.4.4]
             dhcp6: no
         ens192:
             dhcp4: no
@@ -32,12 +51,6 @@ network:
                     - fc01:0:0:1::1
     version: 2
 ```
-
-
-## 参考にした記事たち
-https://jool.mx/en/run-nat64.html
-https://blog.techlab-xe.net/archives/5269
-https://www.webessentials.biz/parallelsdesktop/esxi/
 
 ## install 手順
 この手順に習って
