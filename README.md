@@ -88,3 +88,44 @@ jool instance add "example" --iptables  --pool6 64:ff9b::/96
 jool instance remove "example"
 /sbin/modprobe -r jool
 ```
+## DNS64 unbound install
+[この記事](https://blog.techlab-xe.net/archives/5269)を参考にしました。
+### install
+これだけでできるらしい
+```bash
+sudo apt install unbound
+```
+でもping
+が通らないのでこっちにしてください
+### /etc/unbound/unbound.conf.d/dns64.confを編集
+`interface: fc01:0:0:1::1` は適宜変更
+```/etc/unbound/unbound.conf.d/dns64.conf
+server:
+  verbosity: 2
+  pidfile: "/var/run/unbound.pid"
+  use-syslog: yes
+  module-config: "dns64 iterator"
+  dns64-prefix: 64:ff9b::/96
+  dns64-synthall: yes
+  interface: fc01:0:0:1::1
+  access-control: ::0/0 allow
+  #interface-automatic: yes
+ 
+forward-zone:
+ name: "."
+ forward-addr: 8.8.8.8
+```
+### 再起動
+
+```bash
+sudo systemctl restart unbound.service
+```
+
+### 確認
+DNS/NAT64マシンでこれを実行
+```bash
+dig ipv4.google.com AAAA @8.8.8.8
+```
+```bash
+dig ipv4.google.com AAAA @localhost
+```
