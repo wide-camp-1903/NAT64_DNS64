@@ -210,26 +210,3 @@ curl ipv4.google.com
 sudo systemctl restart unbound.service
 
 ```
-
-```bash 
-
-```
-```bash
-ip6tables -t mangle -A PREROUTING \
-  -d 2001:200:0:ff43::/96 \
-  -j JOOL --instance "example"
-iptables  -t mangle -A PREROUTING \
-  -d 10.0.11.1 -p tcp --dport 61001:65535 \
-  -j JOOL --instance "example"
-iptables  -t mangle -A PREROUTING \
-  -d 10.0.11.1 -p udp --dport 61001:65535 \
-  -j JOOL --instance "example"
-iptables  -t mangle -A PREROUTING \
-  -d 10.0.11.1 -p icmp \
-  -j JOOL --instance "example"
-
-```
-
-
-nic変更
-  internal server
