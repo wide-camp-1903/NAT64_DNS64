@@ -93,17 +93,12 @@ make install
 [ここ](https://jool.mx/en/run-nat64.html)を参考にした
 
 ```bash
-練習環境
-YOUR_IPV4_ADDR=10.211.55.12  #適宜変更
-
-##本番環境
-YOUR_IPV4_ADDR=10.0.11.1  #適宜変更
 /sbin/modprobe jool pool6=2001:200:0:ff43::/96
 jool instance add "example" --netfilter  --pool6 2001:200:0:ff43::/96
 
 ```
 
-## ダウン
+### ダウン
 ```bash
 jool instance remove "example"
 /sbin/modprobe -r jool
@@ -127,16 +122,13 @@ server:
   module-config: "dns64 iterator"
   dns64-prefix: 2001:200:0:ff43::/96
   dns64-synthall: no
-  #private-address: "0.0.0.0/0”
-  #do-ip4: no
   interface: ::
   access-control: ::0/0 allow
   interface-automatic: yes
  
 forward-zone:
  name: "."
- forward-addr: 203.178.156.130
- forward-addr: 203.178.156.131
+ forward-addr: 8.8.8.8
 ```
 ### 再起動
 
@@ -207,6 +199,6 @@ curl ipv4.google.com
 
 ## 自動起動
 ```bash
-sudo systemctl restart unbound.service
+sudo systemctl enable unbound.service
 
 ```
