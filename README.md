@@ -6,56 +6,23 @@ nat64をjoolで立てます
 Macbookの中にesxiを入れて検証した
 
 
-
 client用 ubuntu16.04 gui
 nat64/DNS64用 ubuntu18.04 cui only
 の２種のVMを用意
 
 
 ## 参考にした記事たち
-https://jool.mx/en/run-nat64.html
-https://blog.techlab-xe.net/archives/5269
-https://www.webessentials.biz/parallelsdesktop/esxi/
-
+https://jool.mx/en/run-nat64.html  
+https://blog.techlab-xe.net/archives/5269  
+https://www.webessentials.biz/parallelsdesktop/esxi/  
 
 ## VMの準備
 テスト環境をv6線に繋いで
-```bash
-auto lo
-iface lo inet loopback
-
-auto ens160
-iface ens160 inet6 static
-address fc01::1:20c:29ff:feb9:197b/64
-netmask 64
-gateway fe80::20c:29ff:fe6d:e7d6
-dns-nameservers fc01:29ff:fe6d:e7d6
-```
-nat64/DNS64用 ubuntu18.04 cui onlyの方を
-v6線とインターネットに繋がる線にに繋いで
-`/etc/netplan/50-cloud-init.yaml`
-を編集して
-`netplan apply` を実行
-```yaml:/etc/netplan/50-cloud-init.yaml
-network:
-    ethernets:
-        ens160:
-            dhcp4: true
-            dhcp6: no
-        ens192:
-            dhcp4: no
-            dhcp6: no
-            addresses: 
-                - fc01:0:0:1::1/64
-            gateway6: fc01:0:0:1::1
-            nameservers: 
-                addresses: 
-                    - fc01:0:0:1::1
-    version: 2
-```
+いい感じにIPv6を固定で割り当てておく、
+DHCPやRAはout of scope
 
 ## install 手順
-この手順に習って
+この手順に倣う
 [これ](https://jool.mx/en/install.html)
 
 
@@ -66,15 +33,7 @@ sudo su
 
 ### aptから
 ```bash
-apt install gcc make
-apt install linux-headers-$(uname -r)
-apt install libnl-genl-3-dev
-
-apt install libxtables-dev
-
-apt install dkms
-apt install git autoconf
-apt install tar
+apt install -y gcc make linux-headers-$(uname -r) libnl-genl-3-dev libxtables-dev dkms git autoconf tar
 ```
 ### Joolの本体をcloneしてinstall
 ```bash
@@ -93,9 +52,8 @@ make install
 [ここ](https://jool.mx/en/run-nat64.html)を参考にした
 
 ```bash
-/sbin/modprobe jool pool6=2001:200:0:ff43::/96
-jool instance add "example" --netfilter  --pool6 2001:200:0:ff43::/96
-
+/sbin/modprobe jool pool6=64:ff9b::/96
+jool instance add "example" --netfilter  --pool6 64:ff9b::/96
 ```
 
 ### ダウン
@@ -120,15 +78,15 @@ server:
   pidfile: "/var/run/unbound.pid"
   use-syslog: yes
   module-config: "dns64 iterator"
-  dns64-prefix: 2001:200:0:ff43::/96
+  dns64-prefix: 64:ff9b::/96
   dns64-synthall: no
-  interface: ::
+  interface: ::0
+  port: 53
   access-control: ::0/0 allow
-  interface-automatic: yes
- 
+
 forward-zone:
- name: "."
- forward-addr: 8.8.8.8
+  name: "."
+  forward-addr: 8.8.8.8
 ```
 ### 再起動
 
@@ -200,5 +158,33 @@ curl ipv4.google.com
 ## 自動起動
 ```bash
 sudo systemctl enable unbound.service
+```
 
+## joolの自動起動
+`/etc/systemd/system/jool.service`
+```/etc/systemd/system/jool.service
+[Unit]
+Description=Jool - NAT64
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/jool.conf
+ExecStart=/bin/sh -ec '\
+    /sbin/modprobe jool pool6=${JOOL_IPV6_POOL};\
+    /usr/local/bin/jool instance add "example" --netfilter  --pool6 ${JOOL_IPV6_POOL}\
+'
+
+ExecStop=/usr/local/bin/jool instance remove "example"
+ExecStop=/sbin/modprobe -r jool
+
+[Install]
+WantedBy=multi-user.target
+```
+
+``/etc/jool.conf``を作成し、以下の様に記述kizyutu
+```
+JOOL_IPV6_POOL="64:ff9b::/96"
+JOOL_INSTANCE_NAME="example"
 ```
