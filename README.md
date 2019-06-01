@@ -172,11 +172,20 @@ Type=oneshot
 RemainAfterExit=yes
 EnvironmentFile=/etc/jool.conf
 ExecStart=/bin/sh -ec '\
-    /sbin/modprobe jool pool6=${JOOL_IPV6_POOL};\
-    /usr/local/bin/jool instance add "example" --netfilter  --pool6 ${JOOL_IPV6_POOL}\
+    /sbin/modprobe jool; \
+    /usr/local/bin/jool instance add "${JOOL_INSTANCE_NAME}" --iptables  --pool6 ${JOOL_IPV6_POOL}; \
+    /sbin/ip6tables -t mangle -A PREROUTING -d ${JOOL_IPV6_POOL} -j JOOL --instance "${JOOL_INSTANCE_NAME}"; \
+    /sbin/iptables  -t mangle -A PREROUTING -d ${JOOL_IPV4_ADDRESS} -p tcp --dport ${JOOL_NAPT_START}:${JOOL_NAPT_END} -j JOOL --instance "${JOOL_INSTANCE_NAME}"; \
+    /sbin/iptables  -t mangle -A PREROUTING -d ${JOOL_IPV4_ADDRESS} -p udp --dport ${JOOL_NAPT_START}:${JOOL_NAPT_END} -j JOOL --instance "${JOOL_INSTANCE_NAME}"; \
+    /sbin/iptables  -t mangle -A PREROUTING -d ${JOOL_IPV4_ADDRESS} -p icmp -j JOOL --instance "${JOOL_INSTANCE_NAME}"; \
+    /sbin/ip6tables -t nat -A POSTROUTING -s fc01::/64 -d ::/0 -j MASQUERADE; \
 '
 
-ExecStop=/usr/local/bin/jool instance remove "example"
+
+ExecStop=/sbin/ip6tables -t mangle -F
+ExecStop=/sbin/ip6tables -t nat -F
+ExecStop=/sbin/iptables  -t mangle -F
+ExecStop=/usr/local/bin/jool instance remove "${JOOL_INSTANCE_NAME}"
 ExecStop=/sbin/modprobe -r jool
 
 [Install]
@@ -185,6 +194,9 @@ WantedBy=multi-user.target
 
 ``/etc/jool.conf``を作成し、以下の様に記述kizyutu
 ```
+JOOL_IPV4_ADDRESS="10.211.55.49"
 JOOL_IPV6_POOL="64:ff9b::/96"
 JOOL_INSTANCE_NAME="example"
+JOOL_NAPT_START="61001"
+JOOL_NAPT_END="65535"
 ```
