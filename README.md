@@ -178,15 +178,15 @@ ExecStart=/bin/sh -ec '\
     /sbin/iptables  -t mangle -A PREROUTING -d ${JOOL_IPV4_ADDRESS} -p tcp --dport ${JOOL_NAPT_START}:${JOOL_NAPT_END} -j JOOL --instance "${JOOL_INSTANCE_NAME}"; \
     /sbin/iptables  -t mangle -A PREROUTING -d ${JOOL_IPV4_ADDRESS} -p udp --dport ${JOOL_NAPT_START}:${JOOL_NAPT_END} -j JOOL --instance "${JOOL_INSTANCE_NAME}"; \
     /sbin/iptables  -t mangle -A PREROUTING -d ${JOOL_IPV4_ADDRESS} -p icmp -j JOOL --instance "${JOOL_INSTANCE_NAME}"; \
-    /sbin/ip6tables -A FORWARD -i ens192 -o ens160 -s 2001:df0:eb:41ea:0:2600:0:1/96 -d ::/0 -j ACCEPT; \
-    /sbin/ip6tables -A FORWARD -i ens160 -o ens192 -s ::/0 -d 2001:df0:eb:41ea:0:2600:0:1/96 -j ACCEPT -m state --state ESTABLISHED,RELATED; \
-    /sbin/ip6tables -t nat -A POSTROUTING -o ens160 -s 2001:df0:eb:41ea:0:2600:0:1/96 -d ::/0 -j MASQUERADE; \
+    /sbin/ip6tables -t nat64 -A FORWARD -i ${INTERFACE_V6ONLY} -o ${INTERFACE_WAN} -s ${INTERNAL_IPv6} -d ::/0 -j ACCEPT; \
+    /sbin/ip6tables -t nat64 -A FORWARD -i ${INTERFACE_WAN} -o ${INTERFACE_V6ONLY} -s ::/0 -d ${INTERNAL_IPv6} -j ACCEPT -m state --state ESTABLISHED,RELATED; \
+    /sbin/ip6tables -t nat64 -A POSTROUTING -o ${INTERFACE_WAN} -s ${INTERNAL_IPv6} -d ::/0 -j MASQUERADE; \
 '
 
 
 ExecStop=/sbin/ip6tables -t mangle -F
 ExecStop=/sbin/ip6tables -t nat -F
-ExecStop=/sbin/ip6tables -F
+ExecStop=/sbin/ip6tables -t nat64 -F
 ExecStop=/sbin/iptables  -t mangle -F
 ExecStop=/usr/local/bin/jool instance remove "${JOOL_INSTANCE_NAME}"
 ExecStop=/sbin/modprobe -r jool
@@ -197,9 +197,12 @@ WantedBy=multi-user.target
 
 ``/etc/jool.conf``を作成し、以下の様に記述
 ```
-JOOL_IPV4_ADDRESS="10.211.55.49"
+JOOL_IPV4_ADDRESS="131.113.136.24"
 JOOL_IPV6_POOL="64:ff9b::/96"
 JOOL_INSTANCE_NAME="example"
 JOOL_NAPT_START="61001"
 JOOL_NAPT_END="65535"
+INTERNAL_IPv6=2001:df0:eb:41ea:0:2600:0:1/96
+INTERFACE_WAN=ens160
+INTERFACE_V6ONLY=ens192
 ```
