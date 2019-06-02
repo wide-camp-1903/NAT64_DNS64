@@ -186,7 +186,7 @@ ExecStart=/bin/sh -ec '\
 
 ExecStop=/sbin/ip6tables -t mangle -F
 ExecStop=/sbin/ip6tables -t nat -F
-ExecStop=/sbin/ip6tables -t nat -F
+ExecStop=/sbin/ip6tables -F
 ExecStop=/sbin/iptables  -t mangle -F
 ExecStop=/usr/local/bin/jool instance remove "${JOOL_INSTANCE_NAME}"
 ExecStop=/sbin/modprobe -r jool
